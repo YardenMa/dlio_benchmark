@@ -45,7 +45,7 @@ class NPYReader(FormatReader):
         
         # eq = np.array_equal(d1, d2)
         # logging.info(f"Arrays are equal: {eq}")
-        return self.load_npy_hybrid(filename) # self.load_npy_odirect(filename)
+        return self.load_npy_odirect(filename)
         
     def load_npy_yoni(self, filepath):
         alignment = 4096
