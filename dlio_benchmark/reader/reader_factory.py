@@ -28,7 +28,7 @@ class ReaderFactory(object):
         pass
 
     @staticmethod
-    def get_reader(type, dataset_type, thread_index, epoch_number):
+    def get_reader(type, dataset_type, thread_index, epoch_number, **kwargs):
         """
         This function set the data reader based on the data format and the data loader specified. 
         """
@@ -56,8 +56,13 @@ class ReaderFactory(object):
                 from dlio_benchmark.reader.dali_npy_reader import DaliNPYReader
                 return DaliNPYReader(dataset_type, thread_index, epoch_number)
             else:
-                from dlio_benchmark.reader.npy_reader import NPYReader
-                return NPYReader(dataset_type, thread_index, epoch_number)                         
+                from dlio_benchmark.reader.npy_reader import NPYReader                
+                from dlio_benchmark.reader.memory_pool import AlignedMemoryPool
+                alignment = kwargs.get('alignment', 4096)
+                pool_size = kwargs.get('pool_size', 16)
+                max_sample_size = kwargs.get('max_sample_size', 1024*1024*256)
+                return NPYReader(dataset_type, thread_index, epoch_number, AlignedMemoryPool(alignment, pool_size, max_sample_size))                         
+            
         elif type == FormatType.NPZ:
             if _args.data_loader == DataLoaderType.NATIVE_DALI:
                 raise Exception("Loading data of %s format is not supported without framework data loader; please use npy format instead." %type)

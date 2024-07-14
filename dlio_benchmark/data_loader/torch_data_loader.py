@@ -59,13 +59,29 @@ class TorchDataset(Dataset):
     def worker_init(self, worker_id):
         pickle.loads(self.serial_args)
         _args = ConfigArguments.get_instance()
+        _args.derive_configurations()
+
         _args.configure_dlio_logging(is_child=True)
         self.dlp_logger = _args.configure_dlio_profiler(is_child=True, use_pid=True)
         logging.debug(f"{utcnow()} worker initialized {worker_id} with format {self.format_type}")
+
+        kwargs = {}
+        kwargs['alignment'] = 4096
+        prefetch_factor = 2
+        kwargs['pool_size'] = self.batch_size * (prefetch_factor+1)
+
+        # 95.6% of the samples will have dimensions within 3 standard deviations - those will go to the fast allocation path. 
+        logging.info(f"dimension = {_args.dimension}, dimension_stdev = {_args.dimension_stdev}")
+        max_dim = _args.dimension + 2 * _args.dimension_stdev      
+        kwargs['max_sample_size'] = int(max_dim * max_dim)
+
+        logging.info(f"args {kwargs}")
+
         self.reader = ReaderFactory.get_reader(type=self.format_type,
                                                dataset_type=self.dataset_type,
                                                thread_index=worker_id,
-                                               epoch_number=self.epoch_number)
+                                               epoch_number=self.epoch_number, 
+                                               **kwargs)
 
     def __del__(self):
         if self.dlp_logger:
