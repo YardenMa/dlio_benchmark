@@ -46,7 +46,7 @@ class NPZReader(FormatReader):
         time_to_sleep = file_size / read_speed_gb_per_sec
         time.sleep(time_to_sleep)
 
-        return np.zeros((current_dim[0], current_dim[1], 1))
+        return np.zeros((int(current_dim[0]), int(current_dim[1]), 1))
 
     @dlp.log
     def close(self, filename):
