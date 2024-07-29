@@ -14,6 +14,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
+import time
+
 import numpy as np
 
 from dlio_benchmark.common.constants import MODULE_DATA_READER
@@ -35,7 +37,16 @@ class NPZReader(FormatReader):
     @dlp.log
     def open(self, filename):
         super().open(filename)
-        return np.zeros((12107,12107,1))
+        read_speed_gb_per_sec = 1e9
+        mean_dim = 12107
+        std_dim = 2822
+        current_dim = np.random.normal(mean_dim, std_dim, 2) 
+        file_size = current_dim[0] * current_dim[1]
+
+        time_to_sleep = file_size / read_speed_gb_per_sec
+        time.sleep(time_to_sleep)
+
+        return np.zeros((current_dim[0], current_dim[1], 1))
 
     @dlp.log
     def close(self, filename):
