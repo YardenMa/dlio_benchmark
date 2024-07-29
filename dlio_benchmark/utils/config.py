@@ -62,6 +62,7 @@ class ConfigArguments:
     num_samples_per_file: int = 1
     batch_size: int = 1
     epochs: int = 1
+    batch_sync_frequency: int = 1
     seed_change_epoch: bool = True
     generate_data: bool = False
     generate_only: bool = False
@@ -490,6 +491,8 @@ def LoadConfig(args, config):
     if 'train' in config:
         if 'epochs' in config['train']:
             args.epochs = config['train']['epochs']
+        if 'batch_sync_frequency' in config['train']:
+            args.batch_sync_frequency = config['train']['batch_sync_frequency']
         if 'total_training_steps' in config['train']:
             args.total_training_steps = config['train']['total_training_steps']
         if 'seed_change_epoch' in config['train']:
