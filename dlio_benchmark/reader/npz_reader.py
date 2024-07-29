@@ -40,7 +40,8 @@ class NPZReader(FormatReader):
         read_speed_gb_per_sec = 1e9
         mean_dim = 12107
         std_dim = 2822
-        current_dim = np.random.normal(mean_dim, std_dim, 2) 
+        current_dim = np.random.normal(mean_dim, std_dim, 2)
+        current_dim = np.clip(current_dim, mean_dim - (3 * std_dim), mean_dim + (3 * std_dim))
         file_size = current_dim[0] * current_dim[1]
 
         time_to_sleep = file_size / read_speed_gb_per_sec
