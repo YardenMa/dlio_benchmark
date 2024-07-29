@@ -200,6 +200,7 @@ class StatsCounter(object):
         self.output[epoch]['throughput'] = {}
         self.output[epoch]['au'] = {}
         self.output[epoch]['compute'] = {}
+        self.output[epoch]['barrier'] = {}
         if os.path.exists("/proc/meminfo"):
             self.output[epoch]['host_meminfo'] = lines_to_dict(open("/proc/meminfo", "r").read())
 
@@ -259,6 +260,7 @@ class StatsCounter(object):
         self.output[epoch]['throughput'][f'block{block}'] = []
         self.output[epoch]['au'][f'block{block}'] = []
         self.output[epoch]['compute'][f'block{block}'] = []
+        self.output[epoch]['barrier'][f'block{block}'] = []
         if self.my_rank == 0:
             ts = utcnow()
             logging.info(f"{ts} Starting block {block}")
@@ -323,6 +325,15 @@ class StatsCounter(object):
             self.output[epoch]['proc'] = [duration]
             self.output[epoch]['compute']=[computation_time]
         logging.info(f"{utcnow()} Rank {self.my_rank} step {step} processed {self.batch_size} samples in {duration} s")
+
+    def batch_barriered(self, epoch, step, block, t0):
+        duration = time() - t0
+        key = f'block{block}'
+        if key in self.output[epoch]['barrier']:
+            self.output[epoch]['barrier'][key].append(duration)
+        else:
+            self.output[epoch]['barrier'][key] = [duration]
+        logging.debug(f"{utcnow()} Rank {self.my_rank} step {step}: barriered {self.batch_size} samples in {duration} s")
 
     def compute_metrics_train(self, epoch, block):
         key = f"block{block}"
