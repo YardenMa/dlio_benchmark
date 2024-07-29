@@ -115,6 +115,7 @@ class DLIOBenchmark(object):
             self.total_training_steps = self.args.total_training_steps
 
             self.epochs = self.args.epochs
+            self.batch_sync_frequency = self.args.batch_sync_frequency
             self.batch_size = self.args.batch_size
             self.computation_time = self.args.computation_time
             self.computation_time_stdev = self.args.computation_time_stdev
@@ -260,6 +261,7 @@ class DLIOBenchmark(object):
 
         loader = self.framework.get_loader(dataset_type=DatasetType.TRAIN)
         t0 = time()
+        batch_idx = 0
         for batch in dlp.iter(loader.next()):
             self.stats.batch_loaded(epoch, overall_step, block, t0)
             # Log a new block, unless it's the first one which we've already logged before the loop
@@ -274,7 +276,9 @@ class DLIOBenchmark(object):
                     computation_time = self.computation_time
             self.framework.compute(batch, epoch, block_step, computation_time)
             self.stats.batch_processed(epoch, overall_step, block, t0, computation_time)
-            self.comm.barrier()
+            if (batch_idx % self.batch_sync_frequency) == 0:
+                logging.debug(f"{utcnow()} Rank {self.my_rank} batch {batch_idx} applying `self.comm.barrier()`...")
+                self.comm.barrier()
             if self.do_checkpoint and (
                     self.steps_between_checkpoints >= 0) and overall_step == self.next_checkpoint_step:
                 self.stats.end_block(epoch, block, block_step)
@@ -295,6 +299,7 @@ class DLIOBenchmark(object):
                     self.stats.end_block(epoch, block, block_step - 1)
                 break
             overall_step += 1
+            batch_idx += 1
             t0 = time()
         self.comm.barrier()
         if self.do_checkpoint and (self.steps_between_checkpoints < 0) and (epoch == self.next_checkpoint_epoch):
