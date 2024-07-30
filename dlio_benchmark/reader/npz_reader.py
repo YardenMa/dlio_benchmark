@@ -33,11 +33,12 @@ class NPZReader(FormatReader):
     @dlp.log_init
     def __init__(self, dataset_type, thread_index, epoch):
         super().__init__(dataset_type, thread_index)
+        self.empty_arr = np.zeros((12107, 12107, 1))
 
     @dlp.log
     def open(self, filename):
         super().open(filename)
-        read_speed_gb_per_sec = 1e9
+        read_speed_gb_per_sec = 1e9 * 0.8
         mean_dim = 12107
         std_dim = 2822
         current_dim = np.random.normal(mean_dim, std_dim, 2)
@@ -47,7 +48,7 @@ class NPZReader(FormatReader):
         time_to_sleep = file_size / read_speed_gb_per_sec
         time.sleep(time_to_sleep)
 
-        return np.zeros((int(current_dim[0]), int(current_dim[1]), 1))
+        return self.empty_arr
 
     @dlp.log
     def close(self, filename):
