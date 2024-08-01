@@ -31,11 +31,12 @@ class NPZReader(FormatReader):
     @dlp.log_init
     def __init__(self, dataset_type, thread_index, epoch):
         super().__init__(dataset_type, thread_index)
+        self.zeros = np.zeros((12107,12107,1))
 
     @dlp.log
     def open(self, filename):
         super().open(filename)
-        return np.zeros((12107,12107,1))
+        return self.zeros
 
     @dlp.log
     def close(self, filename):
