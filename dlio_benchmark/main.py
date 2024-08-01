@@ -176,24 +176,26 @@ class DLIOBenchmark(object):
                 num_subfolders = self.num_subfolders_train
             else:
                 num_subfolders = self.num_subfolders_eval
-            filenames = self.storage.walk_node(os.path.join(self.args.data_folder, f"{dataset_type}"))
-            if (len(filenames) == 0):
-                continue
-            if self.storage.get_node(
-                    os.path.join(self.args.data_folder, f"{dataset_type}",
-                                 filenames[0])) == MetadataType.DIRECTORY:
-                assert (num_subfolders == len(filenames))
-                fullpaths = self.storage.walk_node(
-                    os.path.join(self.args.data_folder, f"{dataset_type}/*/*.{self.args.format}"),
-                    use_pattern=True)
-                files = [self.storage.get_basename(f) for f in fullpaths]
-                idx = np.argsort(files)
-                fullpaths = [fullpaths[i] for i in idx]
-            else:
-                assert (num_subfolders == 0)
-                fullpaths = [self.storage.get_uri(os.path.join(self.args.data_folder, f"{dataset_type}", entry))
-                             for entry in filenames if entry.endswith(f'{self.args.format}')]
-                fullpaths = sorted(fullpaths)
+            
+            fullpaths = [''] * self.args.num_files_train
+            # filenames = self.storage.walk_node(os.path.join(self.args.data_folder, f"{dataset_type}"))
+            # if (len(filenames) == 0):
+            #     continue
+            # if self.storage.get_node(
+            #         os.path.join(self.args.data_folder, f"{dataset_type}",
+            #                      filenames[0])) == MetadataType.DIRECTORY:
+            #     assert (num_subfolders == len(filenames))
+            #     fullpaths = self.storage.walk_node(
+            #         os.path.join(self.args.data_folder, f"{dataset_type}/*/*.{self.args.format}"),
+            #         use_pattern=True)
+            #     files = [self.storage.get_basename(f) for f in fullpaths]
+            #     idx = np.argsort(files)
+            #     fullpaths = [fullpaths[i] for i in idx]
+            # else:
+            #     assert (num_subfolders == 0)
+            #     fullpaths = [self.storage.get_uri(os.path.join(self.args.data_folder, f"{dataset_type}", entry))
+            #                  for entry in filenames if entry.endswith(f'{self.args.format}')]
+            #     fullpaths = sorted(fullpaths)
             logging.debug(f"subfolder {num_subfolders} fullpaths {fullpaths}")
             if dataset_type is DatasetType.TRAIN:
                 file_list_train = fullpaths
