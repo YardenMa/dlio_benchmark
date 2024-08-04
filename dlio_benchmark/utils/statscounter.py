@@ -223,16 +223,17 @@ class StatsCounter(object):
             self.per_epoch_stats[epoch]['end'] = ts
             self.per_epoch_stats[epoch]['duration'] = duration
 
-            barrier_duration = 0.
+            self.per_epoch_stats[epoch]['barrier_durations'] = []
             for key in self.per_epoch_stats[epoch].keys():
                 if key.startswith('batch'):
                     batch_stats = self.per_epoch_stats[epoch][key]
-                    barrier_duration += float(batch_stats['duration'])
+                    self.per_epoch_stats[epoch]['barrier_durations'].append(float(batch_stats['duration']))
                     del self.per_epoch_stats[epoch][key]
             
-            barrier_duration = '{:.5f}'.format(barrier_duration)
-            self.per_epoch_stats[epoch]['barrier_duration'] = barrier_duration
-            self.per_epoch_stats[epoch]['barrier_percentage'] = float(barrier_duration) / float(duration)
+            overall_barrier_duration = sum(self.per_epoch_stats[epoch]['barrier_durations'])
+            overall_barrier_duration = '{:.5f}'.format(overall_barrier_duration)
+            self.per_epoch_stats[epoch]['overall_barrier_duration'] = overall_barrier_duration
+            self.per_epoch_stats[epoch]['barrier_percentage'] = float(overall_barrier_duration) / float(duration)
 
             logging.info(f"{ts} Ending epoch {epoch} - {np.sum(steps)} steps completed in {duration} s")
 
