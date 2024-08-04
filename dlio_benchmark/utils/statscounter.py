@@ -224,7 +224,7 @@ class StatsCounter(object):
             self.per_epoch_stats[epoch]['duration'] = duration
 
             self.per_epoch_stats[epoch]['barrier_durations'] = []
-            for key in self.per_epoch_stats[epoch].keys():
+            for key in self.per_epoch_stats[epoch].copy():
                 if key.startswith('batch'):
                     batch_stats = self.per_epoch_stats[epoch].pop(key)
                     self.per_epoch_stats[epoch]['barrier_durations'].append(float(batch_stats['duration']))
