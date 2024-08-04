@@ -226,9 +226,8 @@ class StatsCounter(object):
             self.per_epoch_stats[epoch]['barrier_durations'] = []
             for key in self.per_epoch_stats[epoch].keys():
                 if key.startswith('batch'):
-                    batch_stats = self.per_epoch_stats[epoch][key]
+                    batch_stats = self.per_epoch_stats[epoch].pop(key)
                     self.per_epoch_stats[epoch]['barrier_durations'].append(float(batch_stats['duration']))
-                    del self.per_epoch_stats[epoch][key]
             
             overall_barrier_duration = sum(self.per_epoch_stats[epoch]['barrier_durations'])
             overall_barrier_duration = '{:.5f}'.format(overall_barrier_duration)
