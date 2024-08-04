@@ -278,7 +278,9 @@ class DLIOBenchmark(object):
             self.stats.batch_processed(epoch, overall_step, block, t0, computation_time)
             if (batch_idx % self.batch_sync_frequency) == 0:
                 logging.debug(f"{utcnow()} Rank {self.my_rank} batch {batch_idx} applying `self.comm.barrier()`...")
+                self.stats.start_barrier(epoch, batch_idx)
                 self.comm.barrier()
+                self.stats.end_barrier(epoch, batch_idx)
             if self.do_checkpoint and (
                     self.steps_between_checkpoints >= 0) and overall_step == self.next_checkpoint_step:
                 self.stats.end_block(epoch, block, block_step)

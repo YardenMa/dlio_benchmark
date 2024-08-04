@@ -222,6 +222,9 @@ class StatsCounter(object):
             duration = '{:.2f}'.format(duration.total_seconds())
             self.per_epoch_stats[epoch]['end'] = ts
             self.per_epoch_stats[epoch]['duration'] = duration
+            barrier_duration = sum(batch_stats['duration'] for key, batch_stats in self.per_epoch_stats[epoch].items() if key.startswith('batch'))
+            self.per_epoch_stats[epoch]['barrier_duration'] = barrier_duration
+            self.per_epoch_stats[epoch]['my_util'] = (duration - barrier_duration) / duration
             logging.info(f"{ts} Ending epoch {epoch} - {np.sum(steps)} steps completed in {duration} s")
 
     def start_eval(self, epoch):
@@ -285,6 +288,24 @@ class StatsCounter(object):
             logging.info(f"{utcnow()} Epoch {epoch} - Block {block} [Training] Accelerator Utilization [AU] (%): {self.output[epoch]['au'][f'block{block}']:.4f}")
             logging.info(f"{utcnow()} Epoch {epoch} - Block {block} [Training] Throughput (samples/second): {self.output[epoch]['throughput'][f'block{block}']*self.comm_size:.4f}")
 
+    def start_barrier(self, epoch, batch_idx):
+        if self.my_rank == 0:
+            ts = utcnow()
+            logging.info(f"{ts} Starting barrier {batch_idx}")
+            self.per_epoch_stats[epoch][f'batch{batch_idx}'] = {
+                'start': ts
+            }
+
+    def end_barrier(self, epoch, batch_idx):
+        if self.my_rank == 0:
+            if 'end' in self.per_epoch_stats[epoch][f'batch{batch_idx}']:
+                return
+            ts = utcnow()
+            duration = pd.to_datetime(ts) - pd.to_datetime(self.per_epoch_stats[epoch][f'batch{batch_idx}']['start'])
+            duration = '{:.2f}'.format(duration.total_seconds())
+            self.per_epoch_stats[epoch][f'batch{batch_idx}']['end'] = ts
+            self.per_epoch_stats[epoch][f'batch{batch_idx}']['duration'] = duration 
+    
     def start_ckpt(self, epoch, block, steps_taken):
         if self.my_rank == 0:
             ts = utcnow()
