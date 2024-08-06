@@ -200,6 +200,7 @@ class StatsCounter(object):
         self.output[epoch]['throughput'] = {}
         self.output[epoch]['au'] = {}
         self.output[epoch]['compute'] = {}
+        self.output[epoch]['barrier'] = {}
         if os.path.exists("/proc/meminfo"):
             self.output[epoch]['host_meminfo'] = lines_to_dict(open("/proc/meminfo", "r").read())
 
@@ -222,18 +223,6 @@ class StatsCounter(object):
             duration = '{:.2f}'.format(duration.total_seconds())
             self.per_epoch_stats[epoch]['end'] = ts
             self.per_epoch_stats[epoch]['duration'] = duration
-
-            self.per_epoch_stats[epoch]['barrier_durations'] = []
-            for key in self.per_epoch_stats[epoch].copy():
-                if key.startswith('batch'):
-                    batch_stats = self.per_epoch_stats[epoch].pop(key)
-                    self.per_epoch_stats[epoch]['barrier_durations'].append(float(batch_stats['duration']))
-            
-            overall_barrier_duration = sum(self.per_epoch_stats[epoch]['barrier_durations'])
-            overall_barrier_duration = '{:.5f}'.format(overall_barrier_duration)
-            self.per_epoch_stats[epoch]['overall_barrier_duration'] = overall_barrier_duration
-            self.per_epoch_stats[epoch]['barrier_percentage'] = float(overall_barrier_duration) / float(duration)
-
             logging.info(f"{ts} Ending epoch {epoch} - {np.sum(steps)} steps completed in {duration} s")
 
     def start_eval(self, epoch):
@@ -271,6 +260,7 @@ class StatsCounter(object):
         self.output[epoch]['throughput'][f'block{block}'] = []
         self.output[epoch]['au'][f'block{block}'] = []
         self.output[epoch]['compute'][f'block{block}'] = []
+        self.output[epoch]['barrier'][f'block{block}'] = []
         if self.my_rank == 0:
             ts = utcnow()
             logging.info(f"{ts} Starting block {block}")
@@ -297,24 +287,6 @@ class StatsCounter(object):
             logging.info(f"{utcnow()} Epoch {epoch} - Block {block} [Training] Accelerator Utilization [AU] (%): {self.output[epoch]['au'][f'block{block}']:.4f}")
             logging.info(f"{utcnow()} Epoch {epoch} - Block {block} [Training] Throughput (samples/second): {self.output[epoch]['throughput'][f'block{block}']*self.comm_size:.4f}")
 
-    def start_barrier(self, epoch, batch_idx):
-        if self.my_rank == 0:
-            ts = utcnow()
-            logging.info(f"{ts} Starting barrier {batch_idx}")
-            self.per_epoch_stats[epoch][f'batch{batch_idx}'] = {
-                'start': ts
-            }
-
-    def end_barrier(self, epoch, batch_idx):
-        if self.my_rank == 0:
-            if 'end' in self.per_epoch_stats[epoch][f'batch{batch_idx}']:
-                return
-            ts = utcnow()
-            duration = pd.to_datetime(ts) - pd.to_datetime(self.per_epoch_stats[epoch][f'batch{batch_idx}']['start'])
-            duration = '{:.2f}'.format(duration.total_seconds())
-            self.per_epoch_stats[epoch][f'batch{batch_idx}']['end'] = ts
-            self.per_epoch_stats[epoch][f'batch{batch_idx}']['duration'] = duration 
-    
     def start_ckpt(self, epoch, block, steps_taken):
         if self.my_rank == 0:
             ts = utcnow()
@@ -353,6 +325,15 @@ class StatsCounter(object):
             self.output[epoch]['proc'] = [duration]
             self.output[epoch]['compute']=[computation_time]
         logging.info(f"{utcnow()} Rank {self.my_rank} step {step} processed {self.batch_size} samples in {duration} s")
+
+    def batch_barriered(self, epoch, step, block, t0):
+        duration = time() - t0
+        key = f'block{block}'
+        if key in self.output[epoch]['barrier']:
+            self.output[epoch]['barrier'][key].append(duration)
+        else:
+            self.output[epoch]['barrier'][key] = [duration]
+        logging.debug(f"{utcnow()} Rank {self.my_rank} step {step}: barriered {self.batch_size} samples in {duration} s")
 
     def compute_metrics_train(self, epoch, block):
         key = f"block{block}"
